@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "89591669823",
+    "project_id": "business-world-bcc01",
+    "storage_bucket": "business-world-bcc01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:89591669823:android:2bcf2a07169aa5d6d3048a",
+        "android_client_info": {
+          "package_name": "com.business_world"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSbtpZn8SnnpEj6f3j0ZExistHCVcNJi4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
