@@ -43,8 +43,8 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
 
   void _startAccrualTimer() {
     _accrualTimer?.cancel();
-    // Apply accrual every minute when the dashboard is visible
-    _accrualTimer = Timer.periodic(const Duration(minutes: 1), (_) => _applyAccrualAndRefresh());
+    // Apply accrual frequently for smoother updates
+    _accrualTimer = Timer.periodic(const Duration(seconds: 5), (_) => _applyAccrualAndRefresh());
   }
 
   Future<void> _applyAccrualAndRefresh() async {

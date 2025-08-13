@@ -37,12 +37,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    // Navigate after delay based on auth state
+    // After a brief splash, go to login, then user proceeds to dashboard after auth
     Future.delayed(const Duration(seconds: 3), () {
-      final User? user = FirebaseAuth.instance.currentUser;
-      final next = user != null ? '/home' : '/login';
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, next);
+      Navigator.pushReplacementNamed(context, '/login');
     });
   }
 

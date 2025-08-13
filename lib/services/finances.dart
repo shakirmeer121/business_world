@@ -101,18 +101,12 @@ class FinanceService {
     return total;
   }
 
-  /// Apply accrued business income since lastUpdated to the 'businesses' balance
+  /// Apply accrued business income since lastUpdated (fractional minutes supported)
   Future<void> applyBusinessIncomeAccrual() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    // Get the current total income rate outside the transaction
     final double incomePerMinute = await getTotalBusinessIncomePerMinute();
-    if (incomePerMinute <= 0) {
-      // Still bump lastUpdated to now to avoid accumulating large gaps
-      await _financeCollection.doc(uid).update({'lastUpdated': FieldValue.serverTimestamp()});
-      return;
-    }
 
     final docRef = _financeCollection.doc(uid);
     final now = Timestamp.now();
@@ -132,13 +126,12 @@ class FinanceService {
       last ??= now;
 
       final elapsedMs = now.millisecondsSinceEpoch - last.millisecondsSinceEpoch;
-      final elapsedMinutes = elapsedMs > 0 ? (elapsedMs ~/ (60 * 1000)) : 0;
-
-      if (elapsedMinutes <= 0) {
+      if (elapsedMs <= 0) {
         transaction.update(docRef, {'lastUpdated': FieldValue.serverTimestamp()});
         return;
       }
 
+      final double elapsedMinutes = elapsedMs / (60 * 1000);
       final double currentBusinesses = (data['businesses'] ?? 0).toDouble();
       final double increment = incomePerMinute * elapsedMinutes;
       final double newBusinesses = currentBusinesses + increment;
