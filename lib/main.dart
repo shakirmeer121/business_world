@@ -13,6 +13,7 @@ import 'screens/personal_purchases.dart';
 import 'screens/settings.dart';
 import 'screens/business_selection_screen.dart';
 import 'screens/business_tier_selection_screen.dart';
+import 'screens/business_detail.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,7 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   final String appName;
+
   const MyApp({super.key, required this.appName});
 
   @override
@@ -44,7 +46,11 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainDashboard(),
         '/business_selection': (context) => const BusinessSelectionScreen(),
         '/business': (context) => const BusinessScreen(),
-
+        '/business_detail': (context) {
+          final businessId =
+              ModalRoute.of(context)!.settings.arguments as String;
+          return BusinessDetailScreen(businessId: businessId);
+        },
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/business_tier') {
@@ -76,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2)); // show splash for a bit
+    await Future.delayed(const Duration(seconds: 2)); // show splash briefly
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
@@ -114,7 +120,7 @@ class MainDashboard extends StatefulWidget {
 class _MainDashboardState extends State<MainDashboard> {
   int _selectedIndex = 0;
 
-  // Remove const so widgets are preserved properly
+  // Non-const to preserve widget state
   final List<Widget> _screens = [
     DashboardScreen(),
     BusinessScreen(),
@@ -155,12 +161,30 @@ class _MainDashboardState extends State<MainDashboard> {
         onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.business), label: 'Business'),
-          BottomNavigationBarItem(icon: Icon(Icons.trending_up), label: 'Investment'),
-          BottomNavigationBarItem(icon: Icon(Icons.house), label: 'Real Estate'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Personal'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.business),
+            label: 'Business',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.trending_up),
+            label: 'Investment',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.house),
+            label: 'Real Estate',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Personal',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );

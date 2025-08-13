@@ -4,17 +4,23 @@ import '../services/finances.dart'; // your FinanceService
 import '../services/business.dart'; // your BusinessService
 import '../models/business.dart'; // your BusinessModel
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BusinessTierSelectionScreen extends StatefulWidget {
   final String businessType;
 
-  const BusinessTierSelectionScreen({super.key, required this.businessType});
+  const BusinessTierSelectionScreen({
+    super.key,
+    required this.businessType,
+  });
 
   @override
-  State<BusinessTierSelectionScreen> createState() => _BusinessTierSelectionScreenState();
+  State<BusinessTierSelectionScreen> createState() =>
+      _BusinessTierSelectionScreenState();
 }
 
-class _BusinessTierSelectionScreenState extends State<BusinessTierSelectionScreen> {
+class _BusinessTierSelectionScreenState
+    extends State<BusinessTierSelectionScreen> {
   final FinanceService _financeService = FinanceService();
   final BusinessService _businessService = BusinessService();
 
@@ -41,17 +47,20 @@ class _BusinessTierSelectionScreenState extends State<BusinessTierSelectionScree
     if (finance.cash < selectedOption.startupCost) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                'Insufficient cash. Need \$${selectedOption.startupCost.toStringAsFixed(2)}')),
+          content: Text(
+            'Insufficient cash. Need \$${selectedOption.startupCost.toStringAsFixed(2)}',
+          ),
+        ),
       );
       return;
     }
 
-    // Deduct cash
-await _financeService.updateMultipleBalances({
-  'cash': -selectedOption.startupCost,
-  'businesses': selectedOption.startupCost,
-});
+    // Deduct cash and add to businesses asset
+    await _financeService.updateMultipleBalances({
+      'cash': -selectedOption.startupCost,
+      'businesses': selectedOption.startupCost,
+    });
+
     // Create business model
     final newBusiness = BusinessModel(
       id: '', // Firestore will generate
@@ -61,6 +70,10 @@ await _financeService.updateMultipleBalances({
       tier: selectedOption.tier,
       expenses: selectedOption.startupCost,
       incomePerMinute: selectedOption.incomePerMinute,
+      totalInvestment: selectedOption.startupCost,
+      expansionLevel: 0,
+      nextExpansionCost: selectedOption.startupCost * 0.5,
+      nextExpansionAvailableAt: Timestamp.now(),
     );
 
     await _businessService.addBusiness(newBusiness);
@@ -69,7 +82,7 @@ await _financeService.updateMultipleBalances({
       const SnackBar(content: Text('Business started successfully!')),
     );
 
-  Navigator.pushReplacementNamed(context, '/business');
+    Navigator.pushReplacementNamed(context, '/business');
   }
 
   @override
@@ -77,13 +90,17 @@ await _financeService.updateMultipleBalances({
     final options = businessOptions[widget.businessType]!;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Choose Tier for ${widget.businessType}')),
+      appBar: AppBar(
+        title: Text('Choose Tier for ${widget.businessType}'),
+      ),
       body: Column(
         children: [
           ...options.map((option) {
             return RadioListTile<String>(
               title: Text(
-                  '${option.tier} - Startup: \$${option.startupCost.toStringAsFixed(2)}, Income/min: \$${option.incomePerMinute.toStringAsFixed(2)}'),
+                '${option.tier} - Startup: \$${option.startupCost.toStringAsFixed(2)}, '
+                'Income/min: \$${option.incomePerMinute.toStringAsFixed(2)}',
+              ),
               value: option.tier,
               groupValue: _selectedTier,
               onChanged: (value) {

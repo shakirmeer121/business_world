@@ -1,27 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/investment.dart';
+import '../models/personal_purchase.dart';
 
-class InvestmentsService {
+class PersonalPurchasesService {
   final CollectionReference _collection =
-      FirebaseFirestore.instance.collection('user_investments');
+      FirebaseFirestore.instance.collection('user_personal_purchases');
 
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
-  /// Fetch all investments for the current user
-  Future<List<InvestmentModel>> getUserInvestments() async {
+  /// Fetch all personal purchases for the current user
+  Future<List<PersonalPurchaseModel>> getUserPurchases() async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 
     final snapshot = await _collection.where('ownerId', isEqualTo: uid).get();
     return snapshot.docs
-        .map((doc) => InvestmentModel.fromMap(
+        .map((doc) => PersonalPurchaseModel.fromMap(
             {'id': doc.id, ...doc.data() as Map<String, dynamic>}))
         .toList();
   }
 
-  /// Add a new investment
-  Future<void> addInvestment(InvestmentModel model) async {
+  /// Add a new personal purchase
+  Future<void> addPurchase(PersonalPurchaseModel model) async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 
@@ -32,8 +32,8 @@ class InvestmentsService {
     await _collection.add(data);
   }
 
-  /// Delete an investment
-  Future<void> deleteInvestment(String id) async {
+  /// Delete a personal purchase
+  Future<void> deletePurchase(String id) async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 

@@ -1,27 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/investment.dart';
+import '../models/real_estate.dart';
 
-class InvestmentsService {
+class RealEstateService {
   final CollectionReference _collection =
-      FirebaseFirestore.instance.collection('user_investments');
+      FirebaseFirestore.instance.collection('user_real_estate');
 
   String? get _uid => FirebaseAuth.instance.currentUser?.uid;
 
-  /// Fetch all investments for the current user
-  Future<List<InvestmentModel>> getUserInvestments() async {
+  Future<List<RealEstateModel>> getUserRealEstate() async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 
     final snapshot = await _collection.where('ownerId', isEqualTo: uid).get();
     return snapshot.docs
-        .map((doc) => InvestmentModel.fromMap(
-            {'id': doc.id, ...doc.data() as Map<String, dynamic>}))
+        .map(
+          (doc) => RealEstateModel.fromMap({
+            'id': doc.id,
+            ...doc.data() as Map<String, dynamic>,
+          }),
+        )
         .toList();
   }
 
-  /// Add a new investment
-  Future<void> addInvestment(InvestmentModel model) async {
+  Future<void> addRealEstate(RealEstateModel model) async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 
@@ -32,8 +34,7 @@ class InvestmentsService {
     await _collection.add(data);
   }
 
-  /// Delete an investment
-  Future<void> deleteInvestment(String id) async {
+  Future<void> deleteRealEstate(String id) async {
     final uid = _uid;
     if (uid == null) throw Exception('User not logged in');
 
