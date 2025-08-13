@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 import 'screens/login.dart';
@@ -13,6 +12,7 @@ import 'screens/personal_purchases.dart';
 import 'screens/settings.dart';
 import 'screens/business_selection_screen.dart';
 import 'screens/business_tier_selection_screen.dart';
+import 'screens/splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +44,6 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainDashboard(),
         '/business_selection': (context) => const BusinessSelectionScreen(),
         '/business': (context) => const BusinessScreen(),
-
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/business_tier') {
@@ -56,49 +55,6 @@ class MyApp extends StatelessWidget {
         }
         return null; // fallback for undefined routes
       },
-    );
-  }
-}
-
-/// Splash screen checks login state
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 2)); // show splash for a bit
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          'Business World',
-          style: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ),
     );
   }
 }

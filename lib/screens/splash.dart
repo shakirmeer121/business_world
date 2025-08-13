@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,13 +18,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
 
-    // Animation controller for both gradient and icon movement
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
 
-    // Gradient color tween animation
     _colorAnimation1 = ColorTween(
       begin: Colors.blue.shade800,
       end: Colors.purple.shade700,
@@ -34,14 +33,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       end: Colors.indigo.shade300,
     ).animate(_controller);
 
-    // Icon horizontal movement tween animation (range from 0 to 20 px)
     _iconAnimation = Tween<double>(begin: 0, end: 20).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    // Navigate to home after 3 seconds
+    // Navigate after delay based on auth state
     Future.delayed(const Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/home');
+      final User? user = FirebaseAuth.instance.currentUser;
+      final next = user != null ? '/home' : '/login';
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, next);
     });
   }
 
@@ -72,9 +73,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Moving icon animation
                   Transform.translate(
-                    offset: Offset(_iconAnimation.value, 0), // moves horizontally
+                    offset: Offset(_iconAnimation.value, 0),
                     child: Icon(
                       Icons.business_center,
                       size: 80,
@@ -82,7 +82,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                   ),
                   const SizedBox(height: 20),
-                  // Animated text with shadow for readability
                   Text(
                     'Business World',
                     style: TextStyle(
