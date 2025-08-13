@@ -13,6 +13,7 @@ import 'screens/personal_purchases.dart';
 import 'screens/settings.dart';
 import 'screens/business_selection_screen.dart';
 import 'screens/business_tier_selection_screen.dart';
+import 'screens/business_detail.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +45,10 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const MainDashboard(),
         '/business_selection': (context) => const BusinessSelectionScreen(),
         '/business': (context) => const BusinessScreen(),
-
+        '/business_detail': (context) {
+          final businessId = ModalRoute.of(context)!.settings.arguments as String;
+          return BusinessDetailScreen(businessId: businessId);
+        },
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/business_tier') {
