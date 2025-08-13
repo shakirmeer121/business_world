@@ -179,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('Overall Balance',
+              Text('Fortune',
                   style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 10),
               Text('\$${finance.totalFortune.toStringAsFixed(2)}',
@@ -192,7 +192,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: ListView(
                   shrinkWrap: true,
                   children: [
-                    _buildBalanceRow('Cash', finance.cash),
+                    _buildBalanceRow('Balance', finance.cash),
                     _buildBalanceRow('Businesses', finance.businesses),
                     _buildBalanceRow('Real Estate', finance.realEstate),
                     _buildBalanceRow('Crypto Assets', finance.cryptoAssets),
@@ -226,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: Colors.white,
                                   )
                                 : const Text(
-                                    'Tap here to add \$1 to Cash',
+                                    'Tap to add \$1 to Cash',
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,

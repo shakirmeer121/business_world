@@ -48,8 +48,10 @@ class _BusinessTierSelectionScreenState extends State<BusinessTierSelectionScree
     }
 
     // Deduct cash
-    await _financeService.updateBalance('cash', selectedOption.startupCost);
-
+await _financeService.updateMultipleBalances({
+  'cash': -selectedOption.startupCost,
+  'businesses': selectedOption.startupCost,
+});
     // Create business model
     final newBusiness = BusinessModel(
       id: '', // Firestore will generate

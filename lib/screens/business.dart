@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/business.dart';
 import '../services/business.dart';
 import '../services/finances.dart';
@@ -29,16 +27,29 @@ class _BusinessScreenState extends State<BusinessScreen> {
     setState(() {
       _loading = true;
     });
-    final businesses = await _businessService.getUserBusinesses();
-    setState(() {
-      _businesses = businesses;
-      _loading = false;
-    });
+    try {
+      final businesses = await _businessService.getUserBusinesses();
+      setState(() {
+        _businesses = businesses;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading businesses: $e')),
+      );
+    }
   }
 
   // Navigate to BusinessSelectionScreen
   void _startBusiness() async {
-    final selectedBusinessType = await Navigator.pushNamed(context, '/business_selection') as String?;
+    final selectedBusinessType = await Navigator.pushNamed(
+      context,
+      '/business_selection',
+    ) as String?;
+
     if (selectedBusinessType != null) {
       // Navigate to BusinessTierScreen passing the selected business type
       final started = await Navigator.pushNamed(
@@ -65,7 +76,6 @@ class _BusinessScreenState extends State<BusinessScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Businesses')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _businesses.isEmpty
@@ -76,14 +86,13 @@ class _BusinessScreenState extends State<BusinessScreen> {
                     final business = _businesses[index];
                     return ListTile(
                       title: Text(business.name),
-                      subtitle: Text('Income/min: \$${business.incomePerMinute.toStringAsFixed(2)}'),
+                      subtitle: Text(
+                        'Income/min: \$${business.incomePerMinute.toStringAsFixed(2)}',
+                      ),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () async {
-                          await FirebaseFirestore.instance
-                              .collection('user_businesses')
-                              .doc(business.id)
-                              .delete();
+                          await _businessService.deleteBusiness(business.id);
                           await _loadBusinesses();
                         },
                       ),
@@ -109,4 +118,3 @@ class _BusinessScreenState extends State<BusinessScreen> {
     );
   }
 }
-
