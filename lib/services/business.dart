@@ -30,8 +30,8 @@ class BusinessService {
 
       return querySnapshot.docs.map((doc) {
         return BusinessModel.fromMap({
-          'id': doc.id,
           ...doc.data() as Map<String, dynamic>,
+          'id': doc.id,
         });
       }).toList();
     } on FirebaseException catch (e) {
@@ -54,8 +54,8 @@ class BusinessService {
 
         return docs.map((doc) {
           return BusinessModel.fromMap({
-            'id': doc.id,
             ...doc.data() as Map<String, dynamic>,
+            'id': doc.id,
           });
         }).toList();
       }
@@ -77,7 +77,7 @@ class BusinessService {
     if (data['ownerId'] != uid) {
       throw Exception('Unauthorized');
     }
-    return BusinessModel.fromMap({'id': doc.id, ...data});
+    return BusinessModel.fromMap({...data, 'id': doc.id});
   }
 
   /// Add a new business
@@ -90,6 +90,7 @@ class BusinessService {
         : business.totalInvestment;
 
     final data = business.toMap()
+      ..remove('id')
       ..['ownerId'] = uid
       ..['totalInvestment'] = initialTotalInvestment
       ..['expansionLevel'] = business.expansionLevel
