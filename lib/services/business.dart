@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../models/business.dart';
 
 class BusinessService {
@@ -21,17 +22,45 @@ class BusinessService {
     final uid = _currentUserId;
     if (uid == null) throw Exception("User not logged in");
 
-    final querySnapshot = await _businessCollection
-        .where('ownerId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
-        .get();
+    try {
+      final querySnapshot = await _businessCollection
+          .where('ownerId', isEqualTo: uid)
+          .orderBy('createdAt', descending: true)
+          .get();
 
-    return querySnapshot.docs.map((doc) {
-      return BusinessModel.fromMap({
-        'id': doc.id,
-        ...doc.data() as Map<String, dynamic>,
-      });
-    }).toList();
+      return querySnapshot.docs.map((doc) {
+        return BusinessModel.fromMap({
+          'id': doc.id,
+          ...doc.data() as Map<String, dynamic>,
+        });
+      }).toList();
+    } on FirebaseException catch (e) {
+      // Fallback when composite index is missing: fetch without order and sort client-side
+      if (e.code == 'failed-precondition') {
+        final querySnapshot = await _businessCollection
+            .where('ownerId', isEqualTo: uid)
+            .get();
+
+        final docs = querySnapshot.docs.toList();
+        docs.sort((a, b) {
+          final aTs = a.data().containsKey('createdAt') && a['createdAt'] is Timestamp
+              ? (a['createdAt'] as Timestamp).millisecondsSinceEpoch
+              : 0;
+          final bTs = b.data().containsKey('createdAt') && b['createdAt'] is Timestamp
+              ? (b['createdAt'] as Timestamp).millisecondsSinceEpoch
+              : 0;
+          return bTs.compareTo(aTs); // desc
+        });
+
+        return docs.map((doc) {
+          return BusinessModel.fromMap({
+            'id': doc.id,
+            ...doc.data() as Map<String, dynamic>,
+          });
+        }).toList();
+      }
+      rethrow;
+    }
   }
 
   /// Fetch single business by id
