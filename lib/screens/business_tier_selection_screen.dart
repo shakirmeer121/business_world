@@ -4,6 +4,7 @@ import '../services/finances.dart'; // your FinanceService
 import '../services/business.dart'; // your BusinessService
 import '../models/business.dart'; // your BusinessModel
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BusinessTierSelectionScreen extends StatefulWidget {
   final String businessType;
@@ -47,11 +48,11 @@ class _BusinessTierSelectionScreenState extends State<BusinessTierSelectionScree
       return;
     }
 
-    // Deduct cash
-await _financeService.updateMultipleBalances({
-  'cash': -selectedOption.startupCost,
-  'businesses': selectedOption.startupCost,
-});
+    // Deduct cash and add to businesses asset
+    await _financeService.updateMultipleBalances({
+      'cash': -selectedOption.startupCost,
+      'businesses': selectedOption.startupCost,
+    });
     // Create business model
     final newBusiness = BusinessModel(
       id: '', // Firestore will generate
@@ -61,6 +62,10 @@ await _financeService.updateMultipleBalances({
       tier: selectedOption.tier,
       expenses: selectedOption.startupCost,
       incomePerMinute: selectedOption.incomePerMinute,
+      totalInvestment: selectedOption.startupCost,
+      expansionLevel: 0,
+      nextExpansionCost: selectedOption.startupCost * 0.5,
+      nextExpansionAvailableAt: Timestamp.now(),
     );
 
     await _businessService.addBusiness(newBusiness);
@@ -69,7 +74,7 @@ await _financeService.updateMultipleBalances({
       const SnackBar(content: Text('Business started successfully!')),
     );
 
-  Navigator.pushReplacementNamed(context, '/business');
+    Navigator.pushReplacementNamed(context, '/business');
   }
 
   @override
