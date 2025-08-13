@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/business_definitions.dart'; // your predefined businesses
-import 'business_tier_selection_screen.dart';
+import '../data/business_definitions.dart';
 
 class BusinessSelectionScreen extends StatelessWidget {
   const BusinessSelectionScreen({super.key});
@@ -19,18 +18,16 @@ class BusinessSelectionScreen extends StatelessWidget {
           final name = businessOptions[businessType]![0].name;
 
           return ListTile(
-            leading: Image.asset(image, width: 50, height: 50),
+            leading: Image.asset(
+              image,
+              width: 50,
+              height: 50,
+              errorBuilder: (_, __, ___) => const Icon(Icons.business, size: 40),
+            ),
             title: Text(name),
             subtitle: Text(businessType),
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => BusinessTierSelectionScreen(
-                    businessType: businessType,
-                  ),
-                ),
-              );
+              Navigator.pop(context, businessType);
             },
           );
         },

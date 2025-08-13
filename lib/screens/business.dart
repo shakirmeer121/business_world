@@ -50,6 +50,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
       '/business_selection',
     ) as String?;
 
+    if (!mounted) return;
+
     if (selectedBusinessType != null) {
       // Navigate to BusinessTierScreen passing the selected business type
       final started = await Navigator.pushNamed(
@@ -57,6 +59,8 @@ class _BusinessScreenState extends State<BusinessScreen> {
         '/business_tier',
         arguments: selectedBusinessType,
       ) as bool?;
+
+      if (!mounted) return;
 
       if (started == true) {
         await _loadBusinesses();

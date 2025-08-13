@@ -5,6 +5,8 @@ import '../models/balances.dart';
 class FinanceService {
   final CollectionReference _financeCollection =
       FirebaseFirestore.instance.collection('user_finances');
+  final CollectionReference _businessCollection =
+      FirebaseFirestore.instance.collection('user_businesses');
 
   /// Fetch finance or create new
   Future<UserFinance?> getUserFinance() async {
@@ -31,22 +33,26 @@ class FinanceService {
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
       if (!snapshot.exists || snapshot.data() == null) {
-        throw Exception("User finance doc not found");
+        transaction.set(docRef, UserFinance.zero().toMap());
       }
 
-      final data = snapshot.data()! as Map<String, dynamic>;
-      double currentBalance = (data[category] ?? 0).toDouble();
-      double newBalance = currentBalance + amount;
+      final data = Map<String, dynamic>.from(
+          (snapshot.data() ?? UserFinance.zero().toMap()) as Map<String, dynamic>);
+      final double currentBalance = (data[category] ?? 0).toDouble();
+      final double newBalance = currentBalance + amount;
 
       if (newBalance < 0) {
         throw Exception("Insufficient funds in $category");
       }
 
-      transaction.update(docRef, {category: newBalance});
+      transaction.update(docRef, {
+        category: newBalance,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
     });
   }
 
-  /// Update multiple categories
+  /// Update multiple categories atomically
   Future<void> updateMultipleBalances(Map<String, double> changes) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -56,10 +62,11 @@ class FinanceService {
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
       if (!snapshot.exists || snapshot.data() == null) {
-        throw Exception("User finance doc not found");
+        transaction.set(docRef, UserFinance.zero().toMap());
       }
 
-      final data = Map<String, dynamic>.from(snapshot.data()! as Map<String, dynamic>);
+      final data = Map<String, dynamic>.from(
+          (snapshot.data() ?? UserFinance.zero().toMap()) as Map<String, dynamic>);
 
       changes.forEach((field, amount) {
         final currentValue = (data[field] ?? 0).toDouble();
@@ -70,6 +77,7 @@ class FinanceService {
         data[field] = newValue;
       });
 
+      data['lastUpdated'] = FieldValue.serverTimestamp();
       transaction.update(docRef, data);
     });
   }
@@ -79,69 +87,59 @@ class FinanceService {
     await updateBalance('cash', amount);
   }
 
-  /// Start a specific business and track its fortune
-  Future<void> startBusiness(String businessName, double cost, double fortune) async {
+  /// Sum of all businesses' income per minute for the current user
+  Future<double> getTotalBusinessIncomePerMinute() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
+    if (uid == null) return 0.0;
 
-    final docRef = _financeCollection.doc(uid);
-
-    await FirebaseFirestore.instance.runTransaction((transaction) async {
-      final snapshot = await transaction.get(docRef);
-      if (!snapshot.exists || snapshot.data() == null) {
-        throw Exception("User finance doc not found");
-      }
-
-      final data = Map<String, dynamic>.from(snapshot.data()! as Map<String, dynamic>);
-      double currentCash = (data['cash'] ?? 0).toDouble();
-
-      if (currentCash < cost) {
-        throw Exception("Not enough cash to start this business");
-      }
-
-      // Deduct cash
-      data['cash'] = currentCash - cost;
-
-      // Update business fortune
-      final businesses = Map<String, dynamic>.from(data['businesses'] ?? {});
-      final currentFortune = (businesses[businessName]?['fortune'] ?? 0).toDouble();
-      businesses[businessName] = {
-        'fortune': currentFortune + fortune,
-        'income_per_hour': businesses[businessName]?['income_per_hour'] ?? 0
-      };
-
-      data['businesses'] = businesses;
-
-      transaction.update(docRef, data);
-    });
+    final snapshot = await _businessCollection.where('ownerId', isEqualTo: uid).get();
+    double total = 0.0;
+    for (final doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      total += (data['incomePerMinute'] ?? 0).toDouble();
+    }
+    return total;
   }
 
-  /// Apply income from all businesses
-  Future<void> applyHourlyIncome() async {
+  /// Apply accrued business income since lastUpdated (fractional minutes supported)
+  Future<void> applyBusinessIncomeAccrual() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
+    final double incomePerMinute = await getTotalBusinessIncomePerMinute();
+
     final docRef = _financeCollection.doc(uid);
+    final now = Timestamp.now();
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
+
+      Map<String, dynamic> data;
       if (!snapshot.exists || snapshot.data() == null) {
-        throw Exception("User finance doc not found");
+        data = UserFinance.zero().toMap();
+        transaction.set(docRef, data);
+      } else {
+        data = Map<String, dynamic>.from(snapshot.data()! as Map<String, dynamic>);
       }
 
-      final data = Map<String, dynamic>.from(snapshot.data()! as Map<String, dynamic>);
-      double currentCash = (data['cash'] ?? 0).toDouble();
-      double totalIncome = 0;
+      Timestamp? last = data['lastUpdated'] is Timestamp ? data['lastUpdated'] as Timestamp : null;
+      last ??= now;
 
-      if (data['businesses'] != null) {
-        final businesses = Map<String, dynamic>.from(data['businesses']);
-        businesses.forEach((_, b) {
-          totalIncome += (b['income_per_hour'] ?? 0).toDouble();
-        });
+      final elapsedMs = now.millisecondsSinceEpoch - last.millisecondsSinceEpoch;
+      if (elapsedMs <= 0) {
+        transaction.update(docRef, {'lastUpdated': FieldValue.serverTimestamp()});
+        return;
       }
 
-      data['cash'] = currentCash + totalIncome;
-      transaction.update(docRef, data);
+      final double elapsedMinutes = elapsedMs / (60 * 1000);
+      final double currentBusinesses = (data['businesses'] ?? 0).toDouble();
+      final double increment = incomePerMinute * elapsedMinutes;
+      final double newBusinesses = currentBusinesses + increment;
+
+      transaction.update(docRef, {
+        'businesses': newBusinesses,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
     });
   }
 }
