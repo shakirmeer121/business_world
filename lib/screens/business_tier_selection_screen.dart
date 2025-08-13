@@ -69,7 +69,7 @@ await _financeService.updateMultipleBalances({
       const SnackBar(content: Text('Business started successfully!')),
     );
 
-  Navigator.pushReplacementNamed(context, '/business');
+  Navigator.pop(context, true);
   }
 
   @override

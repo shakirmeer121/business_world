@@ -5,6 +5,7 @@ class InvestmentModel {
   String businessId;
   double amount;
   DateTime date;
+  double incomePerMinute;
 
   InvestmentModel({
     required this.id,
@@ -12,6 +13,7 @@ class InvestmentModel {
     required this.businessId,
     required this.amount,
     required this.date,
+    this.incomePerMinute = 0.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class InvestmentModel {
       'businessId': businessId,
       'amount': amount,
       'date': date.toIso8601String(),
+      'incomePerMinute': incomePerMinute,
     };
   }
 
@@ -31,6 +34,7 @@ class InvestmentModel {
       businessId: map['businessId'] ?? '',
       amount: (map['amount'] ?? 0).toDouble(),
       date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
+      incomePerMinute: (map['incomePerMinute'] ?? 0).toDouble(),
     );
   }
 }

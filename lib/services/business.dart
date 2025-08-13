@@ -15,7 +15,6 @@ class BusinessService {
 
     final querySnapshot = await _businessCollection
         .where('ownerId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .get();
 
     return querySnapshot.docs.map((doc) {

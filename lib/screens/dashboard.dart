@@ -1,98 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-/// UserFinance model
-class UserFinance {
-  final double cash;
-  final double businesses;
-  final double realEstate;
-  final double cryptoAssets;
-  final double stocksBought;
-  final double personalThings;
-
-  UserFinance({
-    required this.cash,
-    required this.businesses,
-    required this.realEstate,
-    required this.cryptoAssets,
-    required this.stocksBought,
-    required this.personalThings,
-  });
-
-  double get totalFortune =>
-      cash + businesses + realEstate + cryptoAssets + stocksBought + personalThings;
-
-  factory UserFinance.fromMap(Map<String, dynamic> data) {
-    return UserFinance(
-      cash: (data['cash'] ?? 0).toDouble(),
-      businesses: (data['businesses'] ?? 0).toDouble(),
-      realEstate: (data['realEstate'] ?? 0).toDouble(),
-      cryptoAssets: (data['cryptoAssets'] ?? 0).toDouble(),
-      stocksBought: (data['stocksBought'] ?? 0).toDouble(),
-      personalThings: (data['personalThings'] ?? 0).toDouble(),
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-        'cash': cash,
-        'businesses': businesses,
-        'realEstate': realEstate,
-        'cryptoAssets': cryptoAssets,
-        'stocksBought': stocksBought,
-        'personalThings': personalThings,
-      };
-
-  factory UserFinance.zero() => UserFinance(
-        cash: 0,
-        businesses: 0,
-        realEstate: 0,
-        cryptoAssets: 0,
-        stocksBought: 0,
-        personalThings: 0,
-      );
-}
-
-/// FinanceService to handle Firestore
-class FinanceService {
-  final CollectionReference _financeCollection =
-      FirebaseFirestore.instance.collection('user_finances');
-
-  Future<UserFinance?> getUserFinance() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-
-    final doc = await _financeCollection.doc(uid).get();
-    if (doc.exists) {
-      return UserFinance.fromMap(doc.data()! as Map<String, dynamic>);
-    } else {
-      final newFinance = UserFinance.zero();
-      await _financeCollection.doc(uid).set(newFinance.toMap());
-      return newFinance;
-    }
-  }
-
-  /// Adds [amount] to the 'cash' field atomically in Firestore
-  Future<void> addCash(double amount) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final docRef = _financeCollection.doc(uid);
-
-    await FirebaseFirestore.instance.runTransaction((transaction) async {
-      final snapshot = await transaction.get(docRef);
-
-      if (!snapshot.exists) {
-        transaction.set(docRef, UserFinance.zero().toMap());
-      }
-
-      final data = snapshot.data()! as Map<String, dynamic>;
-      double currentCash = (data['cash'] ?? 0).toDouble();
-
-      transaction.update(docRef, {'cash': currentCash + amount});
-    });
-  }
-}
+import '../services/finances.dart';
+import '../models/balances.dart';
 
 /// Dashboard Screen
 class DashboardScreen extends StatefulWidget {
@@ -102,16 +11,45 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
   late Future<UserFinance?> financeFuture;
   final FinanceService _financeService = FinanceService();
 
   bool _isAddingCash = false;
+  Timer? _accrualTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     financeFuture = _financeService.getUserFinance();
+    _applyAccrualAndRefresh();
+    _startAccrualTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _accrualTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _applyAccrualAndRefresh();
+    }
+  }
+
+  void _startAccrualTimer() {
+    _accrualTimer?.cancel();
+    // Apply accrual every minute when the dashboard is visible
+    _accrualTimer = Timer.periodic(const Duration(minutes: 1), (_) => _applyAccrualAndRefresh());
+  }
+
+  Future<void> _applyAccrualAndRefresh() async {
+    await _financeService.applyBusinessIncomeAccrual();
+    _refreshFinance();
   }
 
   void _refreshFinance() {
@@ -160,7 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<UserFinance?>(
+    return FutureBuilder<UserFinance?> (
       future: financeFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
