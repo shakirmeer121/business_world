@@ -24,13 +24,13 @@ class DefaultFirebaseOptions {
 
   // Web config
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: "AIzaSyBlDV-EbRqlDSPRQMdgTZHlQbcPF6fSEv4",
-    authDomain: "business-world-bcc01.firebaseapp.com",
-    projectId: "business-world-bcc01",
-    storageBucket: "business-world-bcc01.appspot.com", // FIXED
-    messagingSenderId: "89591669823",
-    appId: "1:89591669823:web:dd6a42535336dd54d3048a",
-    measurementId: "G-RP89HQ5MZ2",
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket:"", // FIXED
+    messagingSenderId: "",
+    appId: "",
+    measurementId: "",
   );
 
   // Android config
@@ -38,8 +38,8 @@ class DefaultFirebaseOptions {
     apiKey: 'YOUR_ANDROID_API_KEY',
     appId: 'YOUR_ANDROID_APP_ID',
     messagingSenderId: 'YOUR_ANDROID_MESSAGING_SENDER_ID',
-    projectId: 'business-world-bcc01',
-    storageBucket: 'business-world-bcc01.appspot.com', // FIXED
+    projectId: ""',
+    storageBucket: "", // FIXED
   );
 
   // iOS config
